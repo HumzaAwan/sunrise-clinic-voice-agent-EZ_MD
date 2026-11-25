@@ -20,7 +20,13 @@ Local AI **voice** receptionist for a fictional EZ MD client (“Sunrise Family 
 
 ## Tech stack (and why)
 
-We chose a **local-first** stack so clinic audio and chart text do not leave this machine during the demo, and so verification / safety stay in our code—not in a black-box hosted agent.
+We chose a **local-first** stack instead of hosted free tiers (e.g. Deepgram for STT or ElevenLabs for TTS) for three reasons:
+
+1. **Cost** — keep usage on this machine so the clinic/demo does not burn API minutes as call volume grows.  
+2. **Control** — own the agent loop (LiveKit worker + LangGraph + Python guardrails); hosted STT/TTS APIs are harder to pin to clinic rules, barge-in, and fixed safety lines.  
+3. **Sensitive data** — voice audio and spoken identifiers (name, DOB, last-four, visit reasons) should not be sent to third-party speech vendors without a production BAA and clear data-handling terms. Local Whisper / Ollama / Kokoro keep that audio on-box for this synthetic demo.
+
+Verification and safety stay in **our code**—not in a black-box hosted agent.
 
 | Layer | Choice | Why we chose it |
 | --- | --- | --- |
