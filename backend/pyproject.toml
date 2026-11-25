@@ -1,0 +1,46 @@
+[project]
+name = "sunrise-family-clinic"
+version = "0.1.0"
+description = "Local-first voice agent for Sunrise Family Clinic"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+  "fastapi==0.165.0",
+  "uvicorn==0.54.0",
+  "pydantic==2.14.4",
+  "pydantic-settings==2.16.3",
+  "sqlalchemy[asyncio]==2.1.9",
+  "aiosqlite==0.22.1",
+  "asyncpg==0.32.0",
+  "alembic==1.20.1",
+  "langgraph==1.2.24",
+  "httpx==0.28.1",
+  "redis==8.2.0",
+  "langfuse>=2.0,<3",
+  "tzdata==2026.6",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest==9.2.0",
+  "pytest-asyncio==1.5.0",
+]
+voice = [
+  "livekit-agents>=1.2",
+  "livekit-plugins-silero",
+  "livekit-plugins-openai",
+  "faster-whisper>=1.1",
+]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+pythonpath = ["."]

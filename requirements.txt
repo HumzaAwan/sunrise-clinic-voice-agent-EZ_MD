@@ -1,0 +1,8 @@
+# Install Python dependencies for Sunrise Family Clinic (from repo root).
+# Prefer:  .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+#
+# This pulls API + LangGraph + LiveKit voice + Whisper.
+# For pytest as well, also run:
+#   .\.venv\Scripts\python.exe -m pip install -r backend\requirements-dev.txt
+
+-r backend/requirements.txt

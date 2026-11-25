@@ -1,0 +1,63 @@
+# Secrets — never commit real env. Graders copy from .env.example (see README).
+.env
+.env.*
+!.env.example
+
+# Markdown — keep only the root README in git
+*.md
+!README.md
+
+# Python
+.venv/
+venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+*.egg-info/
+.eggs/
+dist/
+build/
+
+# Node / frontend
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# Local databases and runtime data
+*.db
+*.sqlite
+*.sqlite3
+backend/data/
+recordings/
+transcripts/
+logs/
+*.log
+
+# Model weights / caches (download on setup)
+models/
+weights/
+*.bin
+*.onnx
+*.pt
+*.gguf
+.cache/
+
+# Docker / local ops
+docker/volumes/
+.langfuse/
+evaluation/reports/
+
+# Keys and credentials
+*.pem
+*.key
+credentials.json
+secrets/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp

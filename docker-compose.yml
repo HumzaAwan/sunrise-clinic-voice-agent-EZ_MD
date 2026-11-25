@@ -1,0 +1,86 @@
+# Local synthetic-data stack. Ports are bound to localhost.
+# Kokoro runs on CPU so the GPU stays available for Ollama on the host.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: clinic
+      POSTGRES_PASSWORD: clinic
+      POSTGRES_DB: sunrise
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - clinic_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U clinic -d sunrise"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "127.0.0.1:6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  livekit:
+    image: livekit/livekit-server:v1.9.1
+    command: --config /etc/livekit.yaml
+    volumes:
+      - ./docker/livekit/livekit.yaml:/etc/livekit.yaml:ro
+    ports:
+      - "127.0.0.1:7880:7880"
+      - "127.0.0.1:7881:7881"
+      - "127.0.0.1:50000-50060:50000-50060/udp"
+
+  kokoro:
+    image: ghcr.io/remsky/kokoro-fastapi-cpu:v0.10.0
+    ports:
+      - "127.0.0.1:8880:8880"
+
+  # Postgres-only Langfuse v2 for Observability (no ClickHouse/S3).
+  langfuse-postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: langfuse
+      POSTGRES_PASSWORD: langfuse
+      POSTGRES_DB: langfuse
+    volumes:
+      - langfuse_pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U langfuse -d langfuse"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  langfuse-web:
+    image: langfuse/langfuse:2
+    depends_on:
+      langfuse-postgres:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:3000:3000"
+    environment:
+      DATABASE_URL: postgresql://langfuse:langfuse@langfuse-postgres:5432/langfuse
+      NEXTAUTH_URL: http://127.0.0.1:3000
+      NEXTAUTH_SECRET: "sunrise-local-nextauth-secret-not-for-production"
+      SALT: "sunrise-local-salt-not-for-production"
+      TELEMETRY_ENABLED: "false"
+      LANGFUSE_INIT_ORG_ID: "sunrise"
+      LANGFUSE_INIT_ORG_NAME: "Sunrise Family Clinic"
+      LANGFUSE_INIT_PROJECT_ID: "clinic-local"
+      LANGFUSE_INIT_PROJECT_NAME: "Clinic Local"
+      LANGFUSE_INIT_PROJECT_PUBLIC_KEY: "pk-lf-sunrise-local-public"
+      LANGFUSE_INIT_PROJECT_SECRET_KEY: "sk-lf-sunrise-local-secret"
+      LANGFUSE_INIT_USER_EMAIL: "admin@sunrise.local"
+      LANGFUSE_INIT_USER_NAME: "Admin"
+      LANGFUSE_INIT_USER_PASSWORD: "sunrise-admin"
+
+volumes:
+  clinic_pg:
+  langfuse_pg:

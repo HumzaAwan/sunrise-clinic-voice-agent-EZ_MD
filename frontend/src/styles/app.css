@@ -1,0 +1,32 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #f4efe6;
+  --color-panel: #fbf8f2;
+  --color-ink: #1b2430;
+  --color-pine: #1e6b4a;
+  --color-pine-dark: #144b34;
+  --color-line: #ddd4c6;
+  --color-clay: #8d3a32;
+  --font-serif: "Palatino Linotype", Palatino, "Iowan Old Style", Georgia, serif;
+  --font-sans: "Segoe UI", "Helvetica Neue", sans-serif;
+}
+
+html, body, #root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, #fffaf1 0, transparent 28rem),
+    var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-sans);
+}
+
+h1, h2, h3 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
