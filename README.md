@@ -20,19 +20,21 @@ Local AI **voice** receptionist for a fictional EZ MD client (“Sunrise Family 
 
 ## Tech stack (and why)
 
-| Layer | Choice | Role |
+We chose a **local-first** stack so clinic audio and chart text do not leave this machine during the demo, and so verification / safety stay in our code—not in a black-box hosted agent.
+
+| Layer | Choice | Why we chose it |
 | --- | --- | --- |
-| Desk | React + Vite + Tailwind + LiveKit client | Browser call UI, Chart, Requests, Settings |
-| API | FastAPI + SQLAlchemy async | Admin/chart HTTP API on `127.0.0.1:8000` |
-| Workflow | LangGraph | Explicit clinic branches (verify, refill, book, after-hours, safety) |
-| Realtime media | Self-hosted LiveKit (Docker) | WebRTC room between browser and voice worker |
-| STT | Faster-Whisper (host GPU/CPU) | Speech → text inside the worker |
-| LLM | Ollama + Qwen 2.5 3B (host) | Intent / field hints / yes-no — **not** identity match or safety truth |
-| TTS | Kokoro (Docker, CPU) | Text → speech |
-| Database | Postgres (Docker) or SQLite | Patients, slots, refills, appointments, callbacks, transcripts, audit |
-| Cache / sync | Redis (Docker) | Scrubbed session mirror + **shared clinic clock** (API ↔ worker) |
-| Traces | Langfuse v2 (Docker, optional) | Scrubbed turn traces |
-| Config | `.env` / `.env.example` | Secrets stay out of git |
+| Desk | React + Vite + Tailwind + LiveKit client | One browser app for the call and staff pages; free LiveKit JS client |
+| API | FastAPI + SQLAlchemy async | Fast localhost API; async DB access for chart tools |
+| Workflow | LangGraph | Explicit branches (verify, refill, book, after-hours, safety) instead of one opaque prompt |
+| Realtime media | Self-hosted LiveKit (Docker) | Real WebRTC voice without LiveKit Cloud / paid telephony for the demo |
+| STT | Faster-Whisper (host) | Local speech-to-text; no hosted transcription vendor |
+| LLM | Ollama + Qwen 2.5 3B (host) | Free local model for intent/wording; small enough for an 8 GB GPU class |
+| TTS | Kokoro (Docker, CPU) | Local speech; leaves GPU for Whisper/Ollama |
+| Database | Postgres (Docker) or SQLite | Durable patients, slots, requests, transcripts, audit |
+| Cache / sync | Redis (Docker) | Shared clinic clock (API ↔ worker) + scrubbed session mirror |
+| Traces | Langfuse v2 (Docker, optional) | Scrubbed turn traces without a SaaS observability bill |
+| Config | `.env` + `.env.example` | Secrets out of git; graders copy the example file |
 
 Everything voice-related is intended to stay **on this machine** for the demo (no hosted STT/LLM/TTS).
 
@@ -445,17 +447,40 @@ Demo closed: `2026-06-13T22:00:00-04:00`. Demo open: e.g. `2026-11-25T10:00:00-0
 | Prompt injection | Refuse mass disclosure |
 | Human / upset / 3× verify fail | Callback / handoff record |
 
-## HIPAA-aligned controls (demo)
+## HIPAA principles — how this project meets each one
 
-- **Verify before disclosure** — chart tools need a verification ticket; closed hours block chart tools  
-- **Minimum necessary** — last-four SSN only; no full SSN in seed/logs/LLM  
-- **Match in code** — not by stuffing the patient table into the prompt  
-- **Mask / redact** — verification transcripts placeholder; audit stores action/outcome without raw digits  
-- **Secrets** — `.env` + `.env.example`; API on localhost  
-- **Recording notice** — spoken at call start  
-- **Synthetic data only**  
+This is a **synthetic-data demo**, not a certification. Below is how the code and README map to each required principle.
 
-**BAAs:** demo STT/LLM/TTS are local; LiveKit is self-hosted. Hosted vendors would need a current BAA before real PHI. This repository does not claim certification or a signed BAA.
+1. **Verify before disclosure**  
+   No chart tool runs until `verify_identity` succeeds and a verification ticket is issued. Refills, labs, balance, and appointment reads check that ticket (and refuse when the office is closed). Unverified callers never hear PHI.
+
+2. **Minimum necessary**  
+   The agent collects only what the flow needs (e.g. booking fields, not a full history). After verify it confirms the **requested** medication/pharmacy for a refill—not the entire med list, home address, or unrelated chart fields. Lab replies are **status only**, never result interpretation.
+
+3. **SSN protection**  
+   Callers give **last four only**. We never ask for or speak a full SSN. The seed/DB path does not store full SSNs for runtime use. Spoken last-four digits are stripped before text reaches Ollama; matching runs in Python (`verification.py` / sensitive capture).
+
+4. **Mask data in logs and transcripts**  
+   Verification turns are stored as a redaction placeholder (not raw name/DOB/SSN). Redaction helpers mask identifiers such as DOB `****-**-14` and SSN-shaped values `***-**-****` in logged/saved lines where applicable.
+
+5. **Do matching in code, not in the LLM**  
+   Patient lookup and name+DOB+last4 match happen in backend functions. The patient database is **not** pasted into the LLM prompt. Qwen may help with intent or soft field reading; it does not decide “verified.”
+
+6. **Secure secrets**  
+   LiveKit keys, DB URL, Langfuse keys, etc. live in `.env` (gitignored). The repo includes `.env.example` with safe localhost placeholders. Graders run: `copy .env.example .env`.
+
+7. **Audit log**  
+   Chart actions write audit rows (session, patient id when known, action, outcome, time) without stuffing extra PHI into the audit payload (see `security/audit.py` + records services).
+
+8. **Business Associate Agreements (BAAs)**  
+   For **this demo**, STT (Whisper), LLM (Ollama/Qwen), and TTS (Kokoro) run **on this PC**; the voice platform is **self-hosted LiveKit**—so demo PHI/audio is not sent to a hosted SaaS.  
+   **For production**, you would only send PHI/audio to vendors with a current clinic BAA (re-check LiveKit Cloud, any hosted STT/LLM/TTS, or transcription APIs against their latest terms—not assumed from marketing pages). You would also add access control, encryption at rest/in transit, retention enforcement, and drop synthetic-only assumptions. A paid plan alone is not a BAA.
+
+9. **Call recording notice**  
+   Every call opens with a greeting that includes that the call may be recorded (fixed phrase in code / LiveKit `on_enter`).
+
+10. **Synthetic data only**  
+    Seed patients and slots come from the assignment-style fake JSON (`database/seeds/…`). No real patient information is used.
 
 
 
