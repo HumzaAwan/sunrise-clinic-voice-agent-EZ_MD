@@ -457,8 +457,5 @@ Demo closed: `2026-06-13T22:00:00-04:00`. Demo open: e.g. `2026-11-25T10:00:00-0
 
 **BAAs:** demo STT/LLM/TTS are local; LiveKit is self-hosted. Hosted vendors would need a current BAA before real PHI. This repository does not claim certification or a signed BAA.
 
-## Demo video
 
-Record **5–7 minutes** (or ≤5 on free Loom) with a real mic. Script: [`docs/DEMO_SCRIPT.md`](docs/DEMO_SCRIPT.md).
 
-Required scenes: verified refill · failed verify · new-patient booking · after-hours callback · medical advice · emergency · third party.
